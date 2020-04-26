@@ -7,7 +7,15 @@ var app = express();
 // https://www.themoviedb.org/account/signup
 
 //Helpers
-var apiHelpers = require("./helpers/apiHelpers.js");
+// var getGenres = require("./helpers/apiHelpers.js");
+// var getMoviesByGenre = require("./helpers/apiHelpers.js");
+var { getGenres, getMoviesByGenre } = require("./helpers/apiHelpers.js");
+var {
+  getAllFavorites,
+  saveFavorite,
+  deleteFavorite,
+} = require("./models/movieModel.js");
+console.log(getMoviesByGenre);
 
 //Middleware
 app.use(bodyParser.json());
@@ -37,23 +45,71 @@ Use the routes below to build your application:
 //OPTION 1: Use regular routes;
 //If you are using OPTION 1, you do not need routes>movieRoutes.js file
 
-app.get("/genres", function(req, res) {
+app.get("/genres", function (req, res) {
+  // console.log("called genres");
+  getGenres(req, (err, genreList) => {
+    if (err) {
+      console.log(err);
+    } else {
+      // res.writeHead(200)
+      res.json(genreList);
+      // res.sendStatus(200);
+    }
+  });
   // make an axios request to get the official list of genres from themoviedb
   // use this endpoint. you will need your API key from signup: https://api.themoviedb.org/3/genre/movie/list
 });
 
-app.get("/search", function(req, res) {
+app.get("/search", function (req, res) {
+  console.log("called search");
+  getMoviesByGenre(req.query.id, (err, movieList) => {
+    if (err) {
+      console.log(err);
+    } else {
+      console.log("searched");
+      res.json(movieList);
+      // console.log(movieList);
+    }
+  });
   // use this endpoint to search for movies by genres (using API key): https://api.themoviedb.org/3/discover/movie
   // and sort them by votes (worst first) using the search parameters in themoviedb API
   // do NOT save the results into the database; render results directly on the page
 });
 
-app.post("/save", function(req, res) {
-  //save movie as favorite into the database
+app.get("/favorites", function (req, res) {
+  getAllFavorites((err, docs) => {
+    if (err) {
+      res.status(500).send("server error - please try again later!");
+    } else {
+      res.json(docs);
+    }
+  });
 });
 
-app.post("/delete", function(req, res) {
+app.post("/save", function (req, resp) {
+  //save movie as favorite into the database
+  saveFavorite(req.body.movie, (err, success) => {
+    if (err) {
+      console.log(err);
+    } else {
+      console.log("saved");
+      resp.status(201).send("Movie saved successfully!");
+      console.log("success:", resp.body);
+      console.log("saved too");
+    }
+  });
+});
+
+app.post("/delete", function (req, res) {
+  console.log("requestbody:", req);
   //remove movie from favorites into the database
+  deleteFavorite(req.body.id, (err, success) => {
+    if (err) {
+      console.log(err);
+    } else {
+      console.log("deleted");
+    }
+  });
 });
 
 //***********************************************************************************************************************
@@ -67,6 +123,6 @@ const movieRoutes = require("./routes/movieRoutes.js");
 //Use routes
 app.use("/movies", movieRoutes);
 
-app.listen(3000, function() {
+app.listen(3000, function () {
   console.log("listening on port 3000!");
 });
